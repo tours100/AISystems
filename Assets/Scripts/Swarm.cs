@@ -64,7 +64,12 @@ public class Swarm : MonoBehaviour
     private void Start()
     {
         InitBoids();
-        print(boids[77].position);
+        System.Array.Resize(ref boidObjects, numberOfBoids);
+        for (int i = 0; i < numberOfBoids; i++)
+        {
+            BBoid curBoid = boids[i];
+            boidObjects[i] = Instantiate(boidPrefab, curBoid.position, Quaternion.identity);
+        }
     }
 
     /// <summary>
@@ -94,7 +99,16 @@ public class Swarm : MonoBehaviour
     /// </summary>
     public void ResetBoidForces()
     {
-        
+        for (int i = 0; i < numberOfBoids; i++)
+        {
+            BBoid curBoid = boids[i];
+            curBoid.alignment = Vector3.zero;
+            curBoid.cohesion = Vector3.zero;
+            curBoid.separation = Vector3.zero;
+            curBoid.obstacle = Vector3.zero;
+            curBoid.currentTotalForce = Vector3.zero;
+            boids[i] = curBoid;
+        }
     }
 
 
@@ -103,7 +117,7 @@ public class Swarm : MonoBehaviour
     /// </summary>
     private void FixedUpdate()
     {
-        
+        ResetBoidForces();
     }
 
 
