@@ -63,7 +63,8 @@ public class Swarm : MonoBehaviour
     /// </summary>
     private void Start()
     {
-
+        InitBoids();
+        print(boids[77].position);
     }
 
     /// <summary>
@@ -71,7 +72,20 @@ public class Swarm : MonoBehaviour
     /// </summary>
     private void InitBoids()
     {
-       
+       Vector3 startingpos = GameObject.Find("Swarm").transform.position;
+       System.Array.Resize(ref boids, numberOfBoids);
+       for (int i = 0; i < numberOfBoids; i++){
+            Vector2 rand =  Random.insideUnitCircle;
+            Vector3 spawn = new Vector3 (rand.x, rand.y, 0);
+            spawn = (spawn * initializationRadius) + startingpos;
+            rand = Random.insideUnitCircle;
+            Vector3 forward = new Vector3 (rand.x, rand.y, 0);
+            forward =  (forward * initializationForwardRandomRange).normalized;
+            BBoid bug = new BBoid();
+            bug.position = spawn;
+            bug.forward = forward;
+            boids[i] = bug;
+       }
     }
 
 
@@ -124,7 +138,10 @@ public class Swarm : MonoBehaviour
 
     public void SetGoal(Vector3 goal)
     {
-
+        NavMeshHit hit;
+        print(NavMesh.SamplePosition(goal, out hit, 1.0f, 0));
+        boidZeroGoal = hit.position;
+        print(NavMesh.GetAreaFromName("NavMesh-Graphics"));
     }
 }
 
