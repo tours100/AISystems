@@ -142,6 +142,7 @@ public class Swarm : MonoBehaviour
                     }
                 }
             }
+            // add neighbour foces
             if (neighbours.Count > 0)
             {
                 int num = neighbours.Count;
@@ -163,7 +164,7 @@ public class Swarm : MonoBehaviour
                 curBoid.currentTotalForce += cohesionWeight * ((curBoid.cohesion.normalized * boidForceScale) - curBoid.velocity);
                 curBoid.currentTotalForce += alignmentWeight * ((curBoid.alignment.normalized * boidForceScale) - curBoid.velocity);
 
-            } else
+            } else //apply wander rule
             {
                 curBoid.currentTotalForce += wanderWeight * ((curBoid.velocity.normalized * boidForceScale) - curBoid.velocity);
             }
@@ -192,7 +193,7 @@ public class Swarm : MonoBehaviour
             {
                 curBoid.currentTotalForce += obstacleWeight * ((curBoid.obstacle.normalized * boidForceScale) - curBoid.velocity);
             }
-            
+            // if boid zero add goal vectors
             if (i == 0)
             {
                 //print(boidZeroPath.corners[currentCorner]);
@@ -210,7 +211,7 @@ public class Swarm : MonoBehaviour
                     if (boidZeroNavigatingTowardGoal)
                     {
                         curBoid.currentTotalForce += goalWeight * (((boidZeroPath.corners[currentCorner] - curBoid.position).normalized * boidForceScale) - curBoid.velocity);
-                        print(boids[0].currentTotalForce);
+                        //print(boids[0].currentTotalForce);
                     }
                 }
             }
