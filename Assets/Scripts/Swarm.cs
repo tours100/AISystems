@@ -147,20 +147,85 @@ public class Swarm : MonoBehaviour
                 int num = neighbours.Count;
                 Vector3 sepTotal = Vector3.zero;
                 Vector3 cohTotal = Vector3.zero;
+                Vector3 algTotal = Vector3.zero;
                 for (int neig = 0;  neig < num; neig++)
                 {
                     sepTotal += curBoid.position - neighbours[neig].position;
                     cohTotal += neighbours[neig].position;
+                    algTotal += neighbours[neig].velocity;
                 }
 
                 curBoid.separation = 1/num * sepTotal;
                 curBoid.cohesion = (1/num * cohTotal) - curBoid.position;
+                curBoid.alignment = 1/num * algTotal;
+
+                curBoid.currentTotalForce += separationWeight * ((curBoid.separation.normalized * boidForceScale) - curBoid.velocity);
+                curBoid.currentTotalForce += cohesionWeight * ((curBoid.cohesion.normalized * boidForceScale) - curBoid.velocity);
+                curBoid.currentTotalForce += alignmentWeight * ((curBoid.alignment.normalized * boidForceScale) - curBoid.velocity);
 
             } else
             {
-                // do wander
+                curBoid.currentTotalForce += wanderWeight * ((curBoid.velocity.normalized * boidForceScale) - curBoid.velocity);
+            }
+
+            //detect if there are obsticals in the way
+            Collider[] hitColliders = Physics.OverlapSphere(curBoid.position, obstacleCheckRadius);
+
+            if (hitColliders.Length > 0)
+            {
+                for (int hit = 0; hit < hitColliders.Length; hit++)
+                {
+                    Vector3 point = hitColliders[hit].ClosestPointOnBounds(curBoid.position);
+                    curBoid.obstacle += (curBoid.position - point).normalized;
+                }
+            }
+
+            // check world bounds
+            if (curBoid.position.x < -8f){curBoid.obstacle += new Vector3(1f,0,0);}
+            if (curBoid.position.x > 8f){curBoid.obstacle += new Vector3(-1f,0,0);}
+            if (curBoid.position.y > 1f){curBoid.obstacle += new Vector3(0,1f,0);}
+            if (curBoid.position.y > 4f){curBoid.obstacle += new Vector3(0,-1f,0);}
+            if (curBoid.position.z > -8f){curBoid.obstacle += new Vector3(0,0,1f);}
+            if (curBoid.position.z > 8f){curBoid.obstacle += new Vector3(0,0,-1f);}
+
+            if (curBoid.obstacle != Vector3.zero)
+            {
+                curBoid.currentTotalForce += obstacleWeight * ((curBoid.obstacle.normalized * boidForceScale) - curBoid.velocity);
+            }
+            
+            if (i == 0)
+            {
+                //print(boidZeroPath.corners[currentCorner]);
+                if (boidZeroNavigatingTowardGoal && currentCorner < boidZeroPath.corners.Length)
+                {
+                    if (Vector3.Distance(boidZeroPath.corners[currentCorner], boids[i].position) <= 1)
+                    {
+                        if (currentCorner == boidZeroPath.corners.Length)
+                        {
+                            boidZeroPath.ClearCorners();
+                            currentCorner = 0;
+                            boidZeroNavigatingTowardGoal = false;
+                        } else { currentCorner++; }
+                    }
+                    if (boidZeroNavigatingTowardGoal)
+                    {
+                        curBoid.currentTotalForce += goalWeight * (((boidZeroPath.corners[currentCorner] - curBoid.position).normalized * boidForceScale) - curBoid.velocity);
+                        print(boids[0].currentTotalForce);
+                    }
+                }
+            }
+            // update all the positions and varables as well as updating the vishual position of the boid
+            for(int cur = 0; cur < numberOfBoids; cur++)
+            {
+                BBoid updateBoid = boids[cur];
+                updateBoid.velocity = updateBoid.velocity + Time.deltaTime * updateBoid.currentTotalForce;
+                updateBoid.position = updateBoid.position + Time.deltaTime * updateBoid.velocity;
+                boidObjects[cur].position = updateBoid.position;
+                updateBoid.forward = boidObjects[cur].forward;
+
             }
         }
+        //print(boids[0].velocity);
     }
 
 
@@ -196,9 +261,12 @@ public class Swarm : MonoBehaviour
     public void SetGoal(Vector3 goal)
     {
         NavMeshHit hit;
-        print(NavMesh.SamplePosition(goal, out hit, 1.0f, 0));
+        NavMesh.SamplePosition(goal, out hit, 16.0f, NavMesh.AllAreas);
         boidZeroGoal = hit.position;
-        print(NavMesh.GetAreaFromName("NavMesh-Graphics"));
+        boidZeroPath = new NavMeshPath();
+        NavMesh.CalculatePath(boidObjects[0].position, boidZeroGoal, NavMesh.AllAreas, boidZeroPath);
+        boidZeroNavigatingTowardGoal = true;
+        currentCorner = 0;
     }
 }
 
