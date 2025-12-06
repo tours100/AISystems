@@ -56,6 +56,7 @@ public class Swarm : MonoBehaviour
     private NavMeshPath boidZeroPath;
     private int currentCorner;
     private bool boidZeroNavigatingTowardGoal = false;
+    private float FOVcheck;
 
 
     /// <summary>
@@ -70,6 +71,7 @@ public class Swarm : MonoBehaviour
             BBoid curBoid = boids[i];
             boidObjects[i] = Instantiate(boidPrefab, curBoid.position, Quaternion.identity);
         }
+        FOVcheck = Mathf.Cos(90);
     }
 
     /// <summary>
@@ -118,6 +120,47 @@ public class Swarm : MonoBehaviour
     private void FixedUpdate()
     {
         ResetBoidForces();
+        List<BBoid> neighbours = new List<BBoid>();
+        for (int i = 0; i < numberOfBoids; i++)
+        {
+            BBoid curBoid = boids[i];
+            //build neighbour list
+            neighbours.Clear();
+            for (int j = 0; j < numberOfBoids; j++)
+            {
+                BBoid potentialNeighbour = boids[j];
+                if (j != i)
+                {
+                    sqrNeighbourDistance = Mathf.Sqrt( Mathf.Pow(curBoid.position.x - potentialNeighbour.position.x, 2) + Mathf.Pow(curBoid.position.y - potentialNeighbour.position.y, 2) + Mathf.Pow(curBoid.position.z - potentialNeighbour.position.z, 2));
+                    if (sqrNeighbourDistance <= neighbourDistance)
+                    {
+                        Vector3 tempVector =  (potentialNeighbour.position - curBoid.position).normalized;
+                        if (Vector3.Dot(tempVector, curBoid.forward) > FOVcheck)
+                        {
+                            neighbours.Add(potentialNeighbour);
+                        }
+                    }
+                }
+            }
+            if (neighbours.Count > 0)
+            {
+                int num = neighbours.Count;
+                Vector3 sepTotal = Vector3.zero;
+                Vector3 cohTotal = Vector3.zero;
+                for (int neig = 0;  neig < num; neig++)
+                {
+                    sepTotal += curBoid.position - neighbours[neig].position;
+                    cohTotal += neighbours[neig].position;
+                }
+
+                curBoid.separation = 1/num * sepTotal;
+                curBoid.cohesion = (1/num * cohTotal) - curBoid.position;
+
+            } else
+            {
+                // do wander
+            }
+        }
     }
 
 
